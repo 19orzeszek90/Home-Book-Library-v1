@@ -1,3 +1,4 @@
+
 import express from 'express';
 import pg from 'pg';
 import cors from 'cors';
@@ -264,38 +265,76 @@ app.post('/api/books/import', csvUpload.single('csvfile'), async (req, res) => {
     const client = await pool.connect();
     let newBooksCount = 0;
     let skippedBooksCount = 0;
+    const skippedBooks = [];
 
     try {
         await client.query('BEGIN');
         const stream = fs.createReadStream(req.file.path).pipe(csv.parse({ headers: true, bom: true, ignoreEmpty: true }));
 
         for await (const row of stream) {
+            // --- Data Cleaning and Transformation ---
+
+            // Handle 'Added Date' separately to allow for DB default
             if (row['Added Date'] && /^\d{2}-\d{2}-\d{4}$/.test(row['Added Date'])) {
                 const [day, month, year] = row['Added Date'].split('-');
                 row['Added Date'] = `${year}-${month}-${day}`;
-            } else if (!row['Added Date'] || row['Added Date'] === '') {
-                delete row['Added Date']; // Let the database use the default value
+            } else {
+                delete row['Added Date']; // Remove to use DB default
             }
 
-            const { ISBN } = row;
-            if (ISBN) {
-                const result = await client.query('SELECT "ID" FROM books WHERE "ISBN" = $1', [ISBN]);
-                if (result.rows.length > 0) {
-                    // Book with this ISBN already exists, skip it.
-                    skippedBooksCount++;
-                    continue;
+            // Handle other date formats
+            ['Started Reading Date', 'Finished Reading Date'].forEach(col => {
+                if (row[col] && /^\d{2}-\d{2}-\d{4}$/.test(row[col])) {
+                    const [day, month, year] = row[col].split('-');
+                    row[col] = `${year}-${month}-${day}`;
+                } else {
+                    row[col] = null; // Use null for invalid/empty dates
                 }
+            });
+
+            // Handle Polish boolean 'Tak'
+            ['Read', 'Favorite'].forEach(col => {
+                if (row[col] && typeof row[col] === 'string' && row[col].toLowerCase() === 'tak') {
+                    row[col] = 'true';
+                }
+            });
+
+            // Set wishlist status based on BookShelf value
+            if (row['BookShelf'] && row['BookShelf'].toLowerCase() === 'do kupienia') {
+                row['is_wishlist'] = 'true';
             }
 
-            // If we are here, the book is new. Process and insert it.
+            // --- Duplicate Check ---
+            const { ISBN, Title, Author } = row;
+            let isDuplicate = false;
+            if (ISBN && ISBN.trim() !== '') {
+                const result = await client.query('SELECT "ID" FROM books WHERE "ISBN" = $1', [ISBN.trim()]);
+                if (result.rows.length > 0) isDuplicate = true;
+            }
+            if (!isDuplicate && Title && Author) { // Fallback check
+                const result = await client.query('SELECT "ID" FROM books WHERE "Title" = $1 AND "Author" = $2', [Title, Author]);
+                if (result.rows.length > 0) isDuplicate = true;
+            }
+
+            if (isDuplicate) {
+                skippedBooksCount++;
+                skippedBooks.push({ Title, Author });
+                continue;
+            }
+
+            // --- Insert New Book ---
             const iconPath = await processCoverImage(row['Image Url'], null);
             row['Icon Path'] = iconPath;
             row['Photo Path'] = iconPath;
-            delete row['Image Url']; // This field is not in the DB
+            delete row['Image Url'];
 
-            const validColumns = Object.keys(row).filter(k => row[k] !== null && row[k] !== undefined && row[k] !== '' && k !== 'ID');
+            const validColumns = Object.keys(row).filter(k => k !== 'ID' && row[k] !== null && row[k] !== undefined && row[k] !== '');
             const values = validColumns.map(k => row[k]);
             
+            if (values.length === 0 || !row['Title'] || !row['Author']) {
+                continue;
+            }
+
             const columns = validColumns.map(k => `"${k}"`).join(', ');
             const placeholders = validColumns.map((_, i) => `$${i + 1}`).join(', ');
             const query = `INSERT INTO books (${columns}) VALUES (${placeholders})`;
@@ -304,16 +343,21 @@ app.post('/api/books/import', csvUpload.single('csvfile'), async (req, res) => {
         }
 
         await client.query('COMMIT');
-        const message = `Import complete. Added: ${newBooksCount} new books. Skipped: ${skippedBooksCount} existing books (not updated).`;
-        res.json({ message });
+        
+        if (newBooksCount === 0 && skippedBooksCount === 0) {
+            return res.status(400).json({ message: 'No valid book data was found in the file. Please ensure the CSV has "Title" and "Author" columns with data, and that books are not already in your library.' });
+        }
+        
+        const message = `Import complete. Added: ${newBooksCount} new books. Skipped: ${skippedBooksCount} duplicates.`;
+        res.json({ message, newBooksCount, skippedBooksCount, skippedBooks });
 
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('CSV import error:', error);
-        res.status(500).json({ message: 'Failed to import books. Transaction rolled back.' });
+        res.status(500).json({ message: `Failed to import books: ${error.message}. All changes have been rolled back.` });
     } finally {
         client.release();
-        fs.unlink(req.file.path, () => {}); // Clean up uploaded file
+        fs.unlink(req.file.path, () => {});
     }
 });
 

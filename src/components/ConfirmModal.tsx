@@ -57,7 +57,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             <h2 id="confirmation-title" className="text-xl font-bold text-brand-text">{title}</h2>
             <button onClick={onCancel} className="text-2xl font-bold text-brand-subtle hover:text-brand-text leading-none">&times;</button>
           </div>
-          <p className="mt-2 text-brand-subtle">{message}</p>
+          <p className="mt-2 text-brand-subtle whitespace-pre-wrap">{message}</p>
         </div>
         <div className="bg-slate-800/50 px-6 py-4 flex justify-end items-center gap-3 rounded-b-lg">
           {hasCancelButton && (

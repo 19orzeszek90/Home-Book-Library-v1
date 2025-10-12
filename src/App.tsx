@@ -53,6 +53,7 @@ const API_URL = (import.meta as any).env.VITE_API_URL || '';
 function AppContent() {
   const [books, setBooks] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentView, setCurrentView] = useState<'library' | 'wishlist'>('library');
@@ -235,6 +236,7 @@ function AppContent() {
     const formData = new FormData();
     formData.append('csvfile', file);
     
+    setIsImporting(true);
     try {
         const response = await fetch(`${API_URL}/api/books/import`, {
             method: 'POST',
@@ -242,12 +244,32 @@ function AppContent() {
         });
         
         if (!response.ok) {
-            const errorResult = await response.json();
-            throw new Error(errorResult.message || 'Import failed');
+            let errorMessage;
+            try {
+                const errorResult = await response.json();
+                errorMessage = errorResult.message || `An error occurred on the server (status ${response.status}).`;
+            } catch (e) {
+                errorMessage = `An unexpected error occurred (status ${response.status}). Could not read server response.`;
+            }
+            throw new Error(errorMessage);
         }
 
         const result = await response.json();
-        showConfirmation({ title: 'Import Successful', message: result.message, confirmText: 'OK' });
+        
+        let message = `Added: ${result.newBooksCount} new book(s).`;
+        if (result.skippedBooksCount > 0) {
+            message += `\nSkipped: ${result.skippedBooksCount} duplicate(s).`;
+        }
+        if (result.skippedBooks && result.skippedBooks.length > 0) {
+            const maxSkippedToShow = 10;
+            message += "\n\nThe following books were skipped:\n";
+            message += result.skippedBooks.slice(0, maxSkippedToShow).map((b: any) => `- ${b.Title || 'N/A'} by ${b.Author || 'N/A'}`).join("\n");
+            if (result.skippedBooks.length > maxSkippedToShow) {
+                message += `\n...and ${result.skippedBooks.length - maxSkippedToShow} more.`;
+            }
+        }
+
+        showConfirmation({ title: 'Import Complete', message, confirmText: 'OK' });
         fetchBooks(); // Refresh book list
     } catch (err) {
         const message = err instanceof Error ? err.message : 'An unknown error occurred during import.';
@@ -256,12 +278,21 @@ function AppContent() {
         if(importFileRef.current) {
             importFileRef.current.value = '';
         }
+        setIsImporting(false);
     }
   };
 
 
   return (
     <div className="min-h-screen bg-brand-primary">
+      {isImporting && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[101] flex flex-col justify-center items-center text-center">
+            <div className="w-16 h-16 border-8 border-slate-500 border-t-brand-accent rounded-full animate-spin"></div>
+            <h2 className="text-2xl font-bold text-brand-text mt-6">Processing your library...</h2>
+            <p className="text-brand-subtle mt-2">This may take a few moments for large files. Please wait.</p>
+        </div>
+      )}
+
       <header className="bg-brand-secondary/50 backdrop-blur-sm sticky top-0 z-20">
         <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
