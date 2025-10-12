@@ -1,0 +1,29 @@
+# IDE and OS files
+.vscode
+.idea
+.DS_Store
+*.swo
+
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Docker files
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Local environment
+.env
+npm-debug.log*
+
+# Instructions
+INSTRUCTIONS.md
+README.md
+APP_BUILD_INSTRUCTIONS.txt
+BUILD_CONTEXT_EXCLUSIONS_LIST.txt
+
+# Persistent storage folder (managed by volume)
+storage
