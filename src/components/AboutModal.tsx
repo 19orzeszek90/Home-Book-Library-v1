@@ -35,7 +35,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ onClose }) => {
             </p>
 
             <a
-              href="https://github.com/19orzeszek90/Home-Book-Library/"
+              href="https://github.com/19orzeszek90/Home-Book-Library-v1"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-brand-text font-semibold py-2 px-4 rounded-lg transition-colors mb-6"
