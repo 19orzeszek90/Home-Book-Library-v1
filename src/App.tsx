@@ -7,7 +7,8 @@ import BookDetailModal from './components/BookDetailModal';
 import StatisticsModal from './components/StatisticsModal';
 import AdvancedSettingsModal from './components/AdvancedSettingsModal';
 import ViewSwitcher from './components/ViewSwitcher';
-import { PlusIcon, DownloadIcon, BookOpenIcon, CogIcon, ChartBarIcon, AdjustmentsIcon } from './components/Icons';
+import SortControls, { SortKey, SortDirection } from './components/SortControls';
+import { PlusIcon, DownloadIcon, BookOpenIcon, CogIcon, ChartBarIcon, AdjustmentsIcon, SearchIcon } from './components/Icons';
 import { ConfirmationProvider, useConfirmation } from './contexts/ConfirmationContext';
 
 export interface Book {
@@ -56,6 +57,7 @@ function AppContent() {
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [currentView, setCurrentView] = useState<'library' | 'wishlist'>('library');
   const [gridSize, setGridSize] = useState<GridSize>(() => {
     return (localStorage.getItem('gridSize') as GridSize) || 'default';
@@ -71,6 +73,9 @@ function AppContent() {
 
   const [editingBook, setEditingBook] = useState<Book | Partial<Book> | null>(null);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+
+  const [sortBy, setSortBy] = useState<SortKey>(() => (localStorage.getItem('sortBy') as SortKey) || 'Title');
+  const [sortDirection, setSortDirection] = useState<SortDirection>(() => (localStorage.getItem('sortDirection') as SortDirection) || 'asc');
   
   const importFileRef = useRef<HTMLInputElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
@@ -97,6 +102,16 @@ function AppContent() {
   useEffect(() => {
     localStorage.setItem('gridSize', gridSize);
   }, [gridSize]);
+
+  useEffect(() => {
+    localStorage.setItem('sortBy', sortBy);
+    localStorage.setItem('sortDirection', sortDirection);
+  }, [sortBy, sortDirection]);
+
+  const handleSortChange = (key: SortKey, direction: SortDirection) => {
+      setSortBy(key);
+      setSortDirection(direction);
+  };
   
   const bookCounts = useMemo(() => {
     const libraryCount = books.filter(book => !book.is_wishlist).length;
@@ -111,14 +126,31 @@ function AppContent() {
         return true;
     });
 
-    if (!searchTerm) {
-        return viewFilteredBooks;
-    }
-    return viewFilteredBooks.filter(book =>
-        (book.Title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (book.Author?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-    );
-  }, [books, searchTerm, currentView]);
+    const searchFilteredBooks = !searchTerm
+        ? viewFilteredBooks
+        : viewFilteredBooks.filter(book =>
+            (book.Title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (book.Author?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+        );
+
+    return [...searchFilteredBooks].sort((a, b) => {
+        const valA = a[sortBy];
+        const valB = b[sortBy];
+
+        if (valA == null) return 1;
+        if (valB == null) return -1;
+        
+        let comparison = 0;
+        
+        if (sortBy === 'Rating') {
+            comparison = (valA as number) - (valB as number);
+        } else {
+            comparison = String(valA).localeCompare(String(valB), undefined, { sensitivity: 'base' });
+        }
+
+        return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [books, searchTerm, currentView, sortBy, sortDirection]);
   
   const gridClasses = useMemo(() => {
     const baseClasses = 'grid grid-cols-2 gap-4 sm:gap-6';
@@ -307,18 +339,25 @@ function AppContent() {
               <h1 className="text-2xl font-bold text-brand-text hidden md:block">Home Book Library</h1>
             </div>
 
-            <div className="flex-1 flex justify-center px-4">
-              <input
-                  type="text"
-                  placeholder="Search by title or author..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full max-w-lg bg-brand-secondary text-brand-text placeholder-brand-subtle px-4 py-2 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-brand-accent"
-                  aria-label="Search library"
-              />
-            </div>
-
             <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Search Bar */}
+              <div className="relative flex items-center">
+                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-subtle pointer-events-none z-10" />
+                <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onFocus={() => setIsSearchExpanded(true)}
+                    onBlur={() => !searchTerm && setIsSearchExpanded(false)}
+                    className={`bg-transparent text-brand-text placeholder-brand-subtle pl-10 pr-3 py-1 border-b-2 focus:outline-none focus:ring-0 transition-all duration-300 ease-in-out ${
+                        isSearchExpanded || searchTerm 
+                        ? 'w-64 border-brand-accent' 
+                        : 'w-10 border-transparent hover:border-brand-subtle focus:w-64 focus:border-brand-accent'
+                    }`}
+                    aria-label="Search library"
+                />
+              </div>
               <input type="file" ref={importFileRef} onChange={handleFileImport} accept=".csv" className="hidden" />
               
               {/* Add Book Dropdown */}
@@ -375,7 +414,14 @@ function AppContent() {
                 Wishlist ({bookCounts.wishlistCount})
               </button>
           </div>
-          <ViewSwitcher currentSize={gridSize} onSizeChange={setGridSize} />
+          <div className="flex items-center gap-4">
+            <SortControls 
+                sortBy={sortBy} 
+                sortDirection={sortDirection} 
+                onSortChange={handleSortChange}
+            />
+            <ViewSwitcher currentSize={gridSize} onSizeChange={setGridSize} />
+          </div>
         </div>
 
         <div className="pt-6">
