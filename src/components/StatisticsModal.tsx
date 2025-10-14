@@ -39,11 +39,7 @@ const StatisticsModal: React.FC<StatisticsModalProps> = ({ books, onClose }) => 
     const totalBooks = libraryBooks.length;
     const booksRead = libraryBooks.filter(b => b.Read).length;
     const favoriteBooks = libraryBooks.filter(b => b.Favorite).length;
-    const totalPages = libraryBooks.reduce((acc, b) => acc + (b.Pages || 0), 0);
-    const pagesRead = libraryBooks.filter(b => b.Read).reduce((acc, b) => acc + (b.Pages || 0), 0);
     
-    const readPercentage = totalBooks > 0 ? Math.round((booksRead / totalBooks) * 100) : 0;
-
     const getTopFive = (key: 'Author' | 'Genres') => {
         const counts = new Map<string, number>();
         libraryBooks.forEach(book => {
@@ -65,18 +61,27 @@ const StatisticsModal: React.FC<StatisticsModalProps> = ({ books, onClose }) => 
     const topGenres = getTopFive('Genres');
 
     const ratingDistribution = libraryBooks.reduce((acc, book) => {
-        if (book.Rating && book.Rating >= 1 && book.Rating <= 5) {
-            const ratingKey = Math.round(book.Rating);
+        if (book.Rating === null || book.Rating === undefined) {
+          return acc;
+        }
+        // Make parsing robust: handle strings and both dot/comma decimal separators.
+        const ratingString = String(book.Rating).replace(',', '.');
+        const rating = parseFloat(ratingString);
+
+        if (!isNaN(rating) && rating >= 1 && rating <= 5) {
+            // Group ratings to the nearest half-star, which handles integers, halves, and decimals.
+            // e.g., 3.84 -> 4.0; 2.12 -> 2.0; 4.5 -> 4.5
+            const ratingKey = (Math.round(rating * 2) / 2).toFixed(1);
             acc[ratingKey] = (acc[ratingKey] || 0) + 1;
         }
         return acc;
-    }, {} as Record<number, number>);
+    }, {} as Record<string, number>);
 
     const ratingChartData = Object.entries(ratingDistribution)
-      .map(([label, value]) => ({ label: `${label} ★`, value }))
-      .sort((a, b) => parseInt(a.label) - parseInt(b.label));
+      .map(([label, value]) => ({ label: `${parseFloat(label).toString()} ★`, value }))
+      .sort((a, b) => parseFloat(a.label) - parseFloat(b.label));
 
-    return { totalBooks, booksRead, favoriteBooks, totalPages, pagesRead, readPercentage, topAuthors, topGenres, ratingChartData };
+    return { totalBooks, booksRead, favoriteBooks, topAuthors, topGenres, ratingChartData };
   }, [books]);
 
   if (!stats) return null;
@@ -88,27 +93,13 @@ const StatisticsModal: React.FC<StatisticsModalProps> = ({ books, onClose }) => 
         <div className="p-6 md:p-8">
           <h2 className="text-2xl font-bold text-brand-text mb-6">Library Statistics</h2>
           
-          <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-3">
+          <div className="space-y-6">
              {/* Overview */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard title="Total Books" value={stats.totalBooks} />
               <StatCard title="Books Read" value={stats.booksRead} />
               <StatCard title="Unread Books" value={stats.totalBooks - stats.booksRead} />
               <StatCard title="Favorites" value={stats.favoriteBooks} />
-            </div>
-
-            {/* Reading Progress */}
-            <div className="bg-slate-800 p-4 rounded-lg">
-                <h3 className="font-semibold text-brand-text mb-2">Reading Progress</h3>
-                <div className="w-full bg-slate-700 rounded-full h-4">
-                    <div className="bg-brand-accent h-4 rounded-full" style={{ width: `${stats.readPercentage}%` }}></div>
-                </div>
-                <div className="flex justify-between items-center mt-2 text-sm">
-                    <span className="text-brand-subtle">
-                        {stats.pagesRead.toLocaleString()} / {stats.totalPages.toLocaleString()} pages read
-                    </span>
-                    <span className="font-bold text-brand-text">{stats.readPercentage}% Complete</span>
-                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

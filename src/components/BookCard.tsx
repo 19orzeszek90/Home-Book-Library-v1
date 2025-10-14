@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Book, GridSize } from '../App';
 import Tag from './Tag';
+import StarRating from './StarRating';
 
 interface BookCardProps {
   book: Book;
@@ -33,6 +34,12 @@ const BookCard: React.FC<BookCardProps> = ({ book, size, onClick }) => {
         <h3 className={`${titleSizeClass} font-bold text-brand-text truncate`} title={book.Title}>{book.Title}</h3>
         <p className={`${authorSizeClass} text-brand-subtle truncate mt-1`} title={book.Author}>{book.Author}</p>
         
+        {book.Rating != null && book.Rating > 0 && (
+            <div className="mt-2">
+                <StarRating rating={book.Rating} />
+            </div>
+        )}
+
         <div className="mt-auto pt-2">
             {book.BookShelf && (
               <Tag name={book.BookShelf} />

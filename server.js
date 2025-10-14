@@ -284,6 +284,12 @@ app.post('/api/books/import', csvUpload.single('csvfile'), async (req, res) => {
         for await (const row of stream) {
             // --- Data Cleaning and Transformation ---
 
+            // Handle potential typo for 'Rating' column. This makes the import more robust.
+            if (row['Raiting'] !== undefined && row['Rating'] === undefined) {
+                row['Rating'] = row['Raiting'];
+                delete row['Raiting'];
+            }
+
             // Handle 'Added Date' separately to allow for DB default
             if (row['Added Date'] && /^\d{2}-\d{2}-\d{4}$/.test(row['Added Date'])) {
                 const [day, month, year] = row['Added Date'].split('-');

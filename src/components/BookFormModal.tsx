@@ -195,7 +195,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ book, books, onClose, onS
 
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <input type="number" step="0.01" name="Price" value={formData.Price ?? ''} onChange={handleChange} placeholder="Price" className={inputStyle} />
-                        <input type="number" step="0.5" name="Rating" value={formData.Rating ?? ''} min="0" max="5" onChange={handleChange} placeholder="Rating (0-5)" className={inputStyle} />
+                        <input type="number" step="0.01" name="Rating" value={formData.Rating ?? ''} min="0" max="5" onChange={handleChange} placeholder="Rating (0-5)" className={inputStyle} />
                         <input type="number" name="Copy Index" value={formData['Copy Index'] ?? ''} onChange={handleChange} placeholder="Copy #" className={inputStyle} />
                     </div>
 
