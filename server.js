@@ -140,7 +140,17 @@ const initializeDatabase = async () => {
 app.get('/api/books', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM books ORDER BY "ID" ASC');
-        res.json(result.rows);
+        const books = result.rows.map(book => {
+            const numericFields = ['Pages', 'Volume', 'Page Read', 'Price', 'Rating', 'Copy Index'];
+            for (const field of numericFields) {
+                if (book[field] != null) {
+                    const num = parseFloat(String(book[field]));
+                    book[field] = isNaN(num) ? null : num;
+                }
+            }
+            return book;
+        });
+        res.json(books);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });
@@ -303,6 +313,17 @@ app.post('/api/books/import', csvUpload.single('csvfile'), async (req, res) => {
             if (row['BookShelf'] && row['BookShelf'].toLowerCase() === 'do kupienia') {
                 row['is_wishlist'] = 'true';
             }
+
+            // Handle numeric fields
+            ['Pages', 'Volume', 'Page Read', 'Price', 'Rating', 'Copy Index'].forEach(field => {
+                if (row[field] != null && row[field] !== '') {
+                    const val = String(row[field]).replace(',', '.');
+                    const num = parseFloat(val);
+                    row[field] = isNaN(num) ? null : num;
+                } else {
+                    row[field] = null;
+                }
+            });
 
             // --- Duplicate Check ---
             const { ISBN, Title, Author } = row;

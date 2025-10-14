@@ -97,6 +97,12 @@ function AppContent() {
   useEffect(() => {
     localStorage.setItem('gridSize', gridSize);
   }, [gridSize]);
+  
+  const bookCounts = useMemo(() => {
+    const libraryCount = books.filter(book => !book.is_wishlist).length;
+    const wishlistCount = books.filter(book => book.is_wishlist).length;
+    return { libraryCount, wishlistCount };
+  }, [books]);
 
   const filteredBooks = useMemo(() => {
     const viewFilteredBooks = books.filter(book => {
@@ -363,10 +369,10 @@ function AppContent() {
         <div className="flex items-center justify-between border-b border-slate-700">
           <div className="flex">
               <button onClick={() => setCurrentView('library')} className={`px-4 py-3 text-sm font-medium transition-colors ${currentView === 'library' ? 'text-brand-accent border-b-2 border-brand-accent' : 'text-brand-subtle hover:text-brand-text'}`}>
-                My Library
+                My Library ({bookCounts.libraryCount})
               </button>
               <button onClick={() => setCurrentView('wishlist')} className={`px-4 py-3 text-sm font-medium transition-colors ${currentView === 'wishlist' ? 'text-brand-accent border-b-2 border-brand-accent' : 'text-brand-subtle hover:text-brand-text'}`}>
-                Wishlist
+                Wishlist ({bookCounts.wishlistCount})
               </button>
           </div>
           <ViewSwitcher currentSize={gridSize} onSizeChange={setGridSize} />
