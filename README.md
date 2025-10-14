@@ -6,12 +6,12 @@ A modern web application for personal book cataloging, featuring smart data fetc
 
 ## ✨ Features
 
-*   **📚 Comprehensive Library Management:** Catalog your books with rich details, from title and author to genres, tags, and personal ratings.
-*   **💡 Smart Data Fetching:** Use the integrated online search to find books by title, author, or ISBN. The app pulls data from Google Books and Open Library, allowing you to autofill forms with a single click.
-*   **🔖 Wishlist & Reading Status:** Keep a separate wishlist for books you want to read. Track your progress by marking books as "Read," and log your reading dates.
-*   **📊 Insightful Statistics:** Visualize your library with detailed statistics, including reading progress, total pages read, top authors, genre distribution, and rating breakdowns.
+*   **📚 Comprehensive Library Management:** Catalog your books with rich details, from title and author to genres, tags, and personal ratings. Manage cover art with multiple options: drag & drop, file upload, paste URL, or use the built-in cover search.
+*   **💡 Smart Data Fetching:** Use the integrated online search to find books by title, author, or ISBN. The app queries both **Google Books** and **Open Library**, combining the results to help you find the best data and cover art.
+*   **🔖 Wishlist & Reading Status:** Keep a separate wishlist for books you want to read. Track your progress by marking books as "Read," and log your start and finish dates.
+*   **📊 Insightful Statistics:** Visualize your library with detailed statistics, including reading progress, total books read, top authors, genre distribution, and rating breakdowns.
 *   **🛠️ Powerful Command Center:** Go beyond basic edits with an advanced management tool. Bulk delete books, or clean up and manage all your genres and bookshelves from a single, powerful interface.
-*   **🔄 Effortless Data Migration:** Easily import your existing library from a CSV file, or export your entire collection for backup. The importer intelligently avoids creating duplicates.
+*   **🔄 Effortless Data Migration:** Easily import your existing library from a CSV file, or export your entire collection for backup. The importer **intelligently avoids duplicates** by checking ISBNs (and title/author as a fallback) and cleans incoming data (e.g., handles various date formats).
 *   **🎨 Customizable & Responsive UI:** Enjoy a sleek, modern, dark-themed interface that works beautifully on any device. Customize the library view with compact, default, or cozy grid layouts.
 *   **🐳 Fully Dockerized:** Get up and running in minutes. The entire application, including the PostgreSQL database, is containerized for a simple and reliable setup using Docker Compose.
 *   **💾 Persistent Storage:** Your data is always safe. The book library and cover images are stored in persistent Docker volumes, so your collection is preserved across restarts.
@@ -29,25 +29,25 @@ Follow these steps to launch the application on your local machine.
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/19orzeszek90/Home-Book-Library.git
-    cd Home-Book-Library
+    git clone https://github.com/19orzeszek90/Home-Book-Library-v1.git
+    cd Home-Book-Library-v1
     ```
 
-2.  **Prepare Docker files:**
-    *   To ensure compatibility with version control systems, you need to rename two files:
+2.  **Rename Docker configuration files:**
+    The repository contains template files for Docker that must be renamed.
     *   Rename `APP_BUILD_INSTRUCTIONS.txt` to `Dockerfile`.
     *   Rename `BUILD_CONTEXT_EXCLUSIONS_LIST.txt` to `.dockerignore`.
 
-3.  **Build and Run with Docker Compose:**
-    *   This single command will build the app's Docker image and start all necessary services in the background.
 
+3.  **Build and Run with Docker Compose:**
+    This single command will build the app's Docker image and start all necessary services in the background.
     ```bash
     docker-compose up -d --build
     ```
 
 4.  **Access the Application:**
-    *   Once the containers are running, open your web browser and navigate to:
-    *   **http://localhost:3001**
+    Once the containers are running, open your web browser and navigate to:
+    **http://localhost:3001**
 
 ## 📦 Project Structure
 

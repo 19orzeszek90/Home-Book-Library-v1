@@ -11,17 +11,19 @@ const BarChart: React.FC<BarChartProps> = ({ title, data }) => {
   return (
     <div>
       <h3 className="font-semibold text-brand-text mb-4">{title}</h3>
-      <div className="flex items-end justify-around h-48 gap-2 border-b-2 border-slate-700 pb-2">
+      <div className="space-y-2">
         {data.map(({ label, value }) => (
-          <div key={label} className="flex-1 flex flex-col items-center gap-2 text-center">
-            <div className="w-full flex items-end justify-center" style={{ height: '100%' }}>
+          <div key={label} className="grid grid-cols-12 items-center gap-2 text-sm">
+            <span className="col-span-2 text-brand-subtle text-right">{label}</span>
+            <div className="col-span-9 w-full bg-slate-700 rounded-full h-4">
               <div
-                className="w-3/4 max-w-xs bg-brand-accent rounded-t-sm hover:bg-sky-400 transition-colors"
-                style={{ height: `${maxValue > 0 ? (value / maxValue) * 100 : 0}%` }}
-                title={`${label}: ${value} books`}
-              ></div>
+                className="bg-brand-accent h-4 rounded-full transition-all duration-500"
+                style={{ width: `${maxValue > 0 ? (value / maxValue) * 100 : 0}%` }}
+                title={`${value} books`}
+              >
+              </div>
             </div>
-            <span className="text-xs text-brand-subtle font-medium">{label}</span>
+            <span className="col-span-1 text-brand-text font-semibold text-right">{value}</span>
           </div>
         ))}
       </div>

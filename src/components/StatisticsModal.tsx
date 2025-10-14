@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useMemo } from 'react';
 import type { Book } from '../App';
 import BarChart from './BarChart';
@@ -60,26 +61,30 @@ const StatisticsModal: React.FC<StatisticsModalProps> = ({ books, onClose }) => 
     const topAuthors = getTopFive('Author');
     const topGenres = getTopFive('Genres');
 
-    const ratingDistribution = libraryBooks.reduce((acc, book) => {
-        if (book.Rating === null || book.Rating === undefined) {
-          return acc;
-        }
-        // Make parsing robust: handle strings and both dot/comma decimal separators.
-        const ratingString = String(book.Rating).replace(',', '.');
-        const rating = parseFloat(ratingString);
+    // New, more robust rating distribution logic
+    const ratingGroups: Record<string, number> = {
+        '5 ★': 0, '4-5 ★': 0, '3-4 ★': 0, '2-3 ★': 0, '1-2 ★': 0, 'No Rating': 0,
+    };
 
-        if (!isNaN(rating) && rating >= 1 && rating <= 5) {
-            // Group ratings to the nearest half-star, which handles integers, halves, and decimals.
-            // e.g., 3.84 -> 4.0; 2.12 -> 2.0; 4.5 -> 4.5
-            const ratingKey = (Math.round(rating * 2) / 2).toFixed(1);
-            acc[ratingKey] = (acc[ratingKey] || 0) + 1;
+    libraryBooks.forEach(book => {
+        const rating = book.Rating;
+        if (rating === 5) {
+            ratingGroups['5 ★']++;
+        } else if (rating && rating >= 4) {
+            ratingGroups['4-5 ★']++;
+        } else if (rating && rating >= 3) {
+            ratingGroups['3-4 ★']++;
+        } else if (rating && rating >= 2) {
+            ratingGroups['2-3 ★']++;
+        } else if (rating && rating > 0) { // Catch ratings from 0.1 to 1.99
+            ratingGroups['1-2 ★']++;
+        } else {
+            ratingGroups['No Rating']++;
         }
-        return acc;
-    }, {} as Record<string, number>);
+    });
 
-    const ratingChartData = Object.entries(ratingDistribution)
-      .map(([label, value]) => ({ label: `${parseFloat(label).toString()} ★`, value }))
-      .sort((a, b) => parseFloat(a.label) - parseFloat(b.label));
+    const ratingChartData = Object.entries(ratingGroups)
+        .map(([label, value]) => ({ label, value }));
 
     return { totalBooks, booksRead, favoriteBooks, topAuthors, topGenres, ratingChartData };
   }, [books]);
@@ -115,7 +120,7 @@ const StatisticsModal: React.FC<StatisticsModalProps> = ({ books, onClose }) => 
             </div>
 
             {/* Rating Distribution */}
-            {stats.ratingChartData.length > 0 && (
+            {books.length > 0 && (
                 <div className="bg-slate-800 p-4 rounded-lg">
                     <BarChart title="Ratings Distribution" data={stats.ratingChartData} />
                 </div>
