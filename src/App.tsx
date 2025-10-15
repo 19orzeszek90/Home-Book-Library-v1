@@ -8,6 +8,7 @@ import StatisticsModal from './components/StatisticsModal';
 import AdvancedSettingsModal from './components/AdvancedSettingsModal';
 import ViewSwitcher from './components/ViewSwitcher';
 import SortControls, { SortKey, SortDirection } from './components/SortControls';
+import SortModal from './components/SortModal';
 import { PlusIcon, DownloadIcon, BookOpenIcon, CogIcon, ChartBarIcon, AdjustmentsIcon, SearchIcon } from './components/Icons';
 import { ConfirmationProvider, useConfirmation } from './contexts/ConfirmationContext';
 
@@ -70,6 +71,7 @@ function AppContent() {
   const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false);
   const [isAddMenuOpen, setAddMenuOpen] = useState(false);
   const [isSettingsMenuOpen, setSettingsMenuOpen] = useState(false);
+  const [isSortModalOpen, setIsSortModalOpen] = useState(false);
 
   const [editingBook, setEditingBook] = useState<Book | Partial<Book> | null>(null);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
@@ -352,8 +354,8 @@ function AppContent() {
                     onBlur={() => !searchTerm && setIsSearchExpanded(false)}
                     className={`bg-transparent text-brand-text placeholder-brand-subtle pl-10 pr-3 py-1 border-b-2 focus:outline-none focus:ring-0 transition-all duration-300 ease-in-out ${
                         isSearchExpanded || searchTerm 
-                        ? 'w-64 border-brand-accent' 
-                        : 'w-10 border-transparent hover:border-brand-subtle focus:w-64 focus:border-brand-accent'
+                        ? 'w-48 sm:w-64 border-brand-accent' 
+                        : 'w-10 border-transparent hover:border-brand-subtle focus:w-48 sm:focus:w-64 focus:border-brand-accent'
                     }`}
                     aria-label="Search library"
                 />
@@ -419,8 +421,11 @@ function AppContent() {
                 sortBy={sortBy} 
                 sortDirection={sortDirection} 
                 onSortChange={handleSortChange}
+                onOpenMobileSort={() => setIsSortModalOpen(true)}
             />
-            <ViewSwitcher currentSize={gridSize} onSizeChange={setGridSize} />
+            <div className="hidden md:flex">
+              <ViewSwitcher currentSize={gridSize} onSizeChange={setGridSize} />
+            </div>
           </div>
         </div>
 
@@ -494,6 +499,19 @@ function AppContent() {
             books={books}
             onClose={() => setIsAdvancedModalOpen(false)}
             onComplete={fetchBooks}
+        />
+      )}
+
+      {isSortModalOpen && (
+        <SortModal
+          isOpen={isSortModalOpen}
+          onClose={() => setIsSortModalOpen(false)}
+          currentSortBy={sortBy}
+          currentSortDirection={sortDirection}
+          onApplySort={(key, dir) => {
+            handleSortChange(key, dir);
+            setIsSortModalOpen(false);
+          }}
         />
       )}
       

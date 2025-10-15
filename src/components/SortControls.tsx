@@ -8,6 +8,7 @@ interface SortControlsProps {
   sortBy: SortKey;
   sortDirection: SortDirection;
   onSortChange: (key: SortKey, direction: SortDirection) => void;
+  onOpenMobileSort: () => void;
 }
 
 const sortOptions: { value: SortKey; label: string }[] = [
@@ -17,7 +18,7 @@ const sortOptions: { value: SortKey; label: string }[] = [
   { value: 'Published Date', label: 'Published' },
 ];
 
-const SortControls: React.FC<SortControlsProps> = ({ sortBy, sortDirection, onSortChange }) => {
+const SortControls: React.FC<SortControlsProps> = ({ sortBy, sortDirection, onSortChange, onOpenMobileSort }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -43,41 +44,53 @@ const SortControls: React.FC<SortControlsProps> = ({ sortBy, sortDirection, onSo
   const currentLabel = sortOptions.find(opt => opt.value === sortBy)?.label;
 
   return (
-    <div className="flex items-center gap-1">
-      <SortFunnelIcon className="h-5 w-5 text-brand-subtle" />
-      <div className="relative" ref={menuRef}>
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="flex items-center gap-1.5 p-1.5 rounded-md text-brand-subtle hover:text-brand-text transition-colors"
-          aria-haspopup="true"
-          aria-expanded={isMenuOpen}
-        >
-          <span className="text-sm">{currentLabel}</span>
-          <ChevronDownIcon className="h-4 w-4" />
-        </button>
-        {isMenuOpen && (
-          <div className="absolute right-0 mt-2 w-36 bg-brand-secondary rounded-md shadow-lg py-1 z-30" role="menu">
-            {sortOptions.map(option => (
-              <a
-                key={option.value}
-                onClick={() => handleSelectOption(option.value)}
-                className={`cursor-pointer block px-4 py-2 text-sm ${sortBy === option.value ? 'text-brand-accent font-semibold' : 'text-brand-text'} hover:bg-slate-700`}
-                role="menuitem"
-              >
-                {option.label}
-              </a>
-            ))}
-          </div>
-        )}
-      </div>
+    <>
+      {/* Mobile View: Icon only */}
       <button
-        onClick={toggleSortDirection}
-        className="p-1.5 rounded-md text-brand-subtle hover:text-brand-text transition-colors"
-        aria-label={`Sort in ${sortDirection === 'asc' ? 'descending' : 'ascending'} order`}
+        onClick={onOpenMobileSort}
+        className="flex items-center gap-1.5 p-1.5 rounded-md text-brand-subtle hover:text-brand-text transition-colors md:hidden"
+        aria-label="Open sort options"
       >
-        {sortDirection === 'asc' ? <SortAscendingIcon className="h-5 w-5" /> : <SortDescendingIcon className="h-5 w-5" />}
+        <SortFunnelIcon className="h-5 w-5" />
       </button>
-    </div>
+
+      {/* Desktop View: Full controls */}
+      <div className="hidden md:flex items-center gap-1">
+        <SortFunnelIcon className="h-5 w-5 text-brand-subtle" />
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="flex items-center gap-1.5 p-1.5 rounded-md text-brand-subtle hover:text-brand-text transition-colors"
+            aria-haspopup="true"
+            aria-expanded={isMenuOpen}
+          >
+            <span className="text-sm">{currentLabel}</span>
+            <ChevronDownIcon className="h-4 w-4" />
+          </button>
+          {isMenuOpen && (
+            <div className="absolute right-0 mt-2 w-36 bg-brand-secondary rounded-md shadow-lg py-1 z-30" role="menu">
+              {sortOptions.map(option => (
+                <a
+                  key={option.value}
+                  onClick={() => handleSelectOption(option.value)}
+                  className={`cursor-pointer block px-4 py-2 text-sm ${sortBy === option.value ? 'text-brand-accent font-semibold' : 'text-brand-text'} hover:bg-slate-700`}
+                  role="menuitem"
+                >
+                  {option.label}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={toggleSortDirection}
+          className="p-1.5 rounded-md text-brand-subtle hover:text-brand-text transition-colors"
+          aria-label={`Sort in ${sortDirection === 'asc' ? 'descending' : 'ascending'} order`}
+        >
+          {sortDirection === 'asc' ? <SortAscendingIcon className="h-5 w-5" /> : <SortDescendingIcon className="h-5 w-5" />}
+        </button>
+      </div>
+    </>
   );
 };
 
