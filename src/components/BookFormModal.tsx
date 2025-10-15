@@ -80,17 +80,28 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ book, books, onClose, onS
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    let finalValue: string | number | boolean | null = value;
-    if (type === 'number') {
-      finalValue = value === '' ? null : Number(value);
-    }
-    if (type === 'date') {
-        finalValue = value === '' ? null : value;
-    }
-    if (type === 'checkbox') {
-        finalValue = (e.target as HTMLInputElement).checked;
-    }
-    setFormData(prev => ({ ...prev, [name]: finalValue }));
+    
+    setFormData(prev => {
+      let finalValue: string | number | boolean | null = value;
+
+      if (type === 'number') {
+        finalValue = value === '' ? null : Number(value);
+      } else if (type === 'date') {
+          finalValue = value === '' ? null : value;
+      } else if (type === 'checkbox') {
+          finalValue = (e.target as HTMLInputElement).checked;
+      }
+      
+      const newFormData = { ...prev, [name]: finalValue };
+
+      // When marking as read, also set finish date to today.
+      if (name === 'Read' && finalValue === true) {
+          const today = new Date().toISOString().slice(0, 10);
+          newFormData["Finished Reading Date"] = today;
+      }
+      
+      return newFormData;
+    });
   };
   
   const handleCoverChange = (newUrl: string) => {
