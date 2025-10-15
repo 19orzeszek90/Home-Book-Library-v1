@@ -6,11 +6,12 @@ import AboutModal from './components/AboutModal';
 import BookDetailModal from './components/BookDetailModal';
 import ReadingJourneyModal from './components/ReadingJourneyModal';
 import AdvancedSettingsModal from './components/AdvancedSettingsModal';
+import BackupRestoreModal from './components/BackupRestoreModal';
 import ReadingGoalBanner from './components/ReadingGoalBanner';
 import ViewSwitcher from './components/ViewSwitcher';
 import SortControls, { SortKey, SortDirection } from './components/SortControls';
 import SortModal from './components/SortModal';
-import { PlusIcon, DownloadIcon, BookOpenIcon, CogIcon, ChartBarIcon, AdjustmentsIcon, SearchIcon } from './components/Icons';
+import { PlusIcon, BookOpenIcon, CogIcon, ChartBarIcon, AdjustmentsIcon, SearchIcon, HardDriveIcon } from './components/Icons';
 import { ConfirmationProvider, useConfirmation } from './contexts/ConfirmationContext';
 
 export interface Book {
@@ -56,7 +57,8 @@ const API_URL = (import.meta as any).env.VITE_API_URL || '';
 function AppContent() {
   const [books, setBooks] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isImporting, setIsImporting] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -70,6 +72,7 @@ function AppContent() {
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isJourneyModalOpen, setIsJourneyModalOpen] = useState(false);
   const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false);
+  const [isBackupRestoreModalOpen, setIsBackupRestoreModalOpen] = useState(false);
   const [isAddMenuOpen, setAddMenuOpen] = useState(false);
   const [isSettingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [isSortModalOpen, setIsSortModalOpen] = useState(false);
@@ -262,9 +265,34 @@ function AppContent() {
     }
   };
 
-  const handleExport = () => {
+  const handleExportCSV = () => {
     window.location.href = `${API_URL}/api/books/export`;
-    setSettingsMenuOpen(false);
+  };
+
+  const handleFullBackup = async () => {
+    setProcessingStatus('Creating full backup...');
+    setIsProcessing(true);
+    try {
+        const response = await fetch(`${API_URL}/api/books/backup/full`);
+        if (!response.ok) {
+            throw new Error('Backup creation failed on the server.');
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const date = new Date().toISOString().slice(0, 10);
+        a.download = `home-book-library-backup-${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'An unknown error occurred during backup.';
+        showConfirmation({ title: 'Backup Failed', message, confirmText: 'OK', confirmVariant: 'danger' });
+    } finally {
+        setIsProcessing(false);
+    }
   };
 
   const handleTriggerImport = () => {
@@ -279,7 +307,8 @@ function AppContent() {
     const formData = new FormData();
     formData.append('csvfile', file);
     
-    setIsImporting(true);
+    setProcessingStatus('Importing from CSV...');
+    setIsProcessing(true);
     try {
         const response = await fetch(`${API_URL}/api/books/import`, {
             method: 'POST',
@@ -321,17 +350,55 @@ function AppContent() {
         if(importFileRef.current) {
             importFileRef.current.value = '';
         }
-        setIsImporting(false);
+        setIsProcessing(false);
+    }
+  };
+  
+  const handleFileRestore = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    setIsBackupRestoreModalOpen(false);
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('restorefile', file);
+    
+    setProcessingStatus('Restoring from backup...');
+    setIsProcessing(true);
+    try {
+        const response = await fetch(`${API_URL}/api/books/restore/full`, {
+            method: 'POST',
+            body: formData,
+        });
+        
+        if (!response.ok) {
+            const errorResult = await response.json();
+            throw new Error(errorResult.message || 'Restore failed on the server.');
+        }
+
+        const result = await response.json();
+        let message = `Added: ${result.newBooksCount} new book(s).\nRestored ${result.imagesRestoredCount} cover image(s).`;
+        if (result.skippedBooksCount > 0) {
+            message += `\nSkipped: ${result.skippedBooksCount} duplicate book(s).`;
+        }
+        
+        showConfirmation({ title: 'Restore Complete', message, confirmText: 'OK' });
+        fetchBooks();
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'An unknown error occurred during restore.';
+        showConfirmation({ title: 'Restore Failed', message, confirmText: 'OK', confirmVariant: 'danger' });
+    } finally {
+        // We don't need to clear the file input here as it's part of a modal that gets re-rendered
+        setIsProcessing(false);
     }
   };
 
 
   return (
     <div className="min-h-screen bg-brand-primary">
-      {isImporting && (
+      {isProcessing && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[101] flex flex-col justify-center items-center text-center">
             <div className="w-16 h-16 border-8 border-slate-500 border-t-brand-accent rounded-full animate-spin"></div>
-            <h2 className="text-2xl font-bold text-brand-text mt-6">Processing your library...</h2>
+            <h2 className="text-2xl font-bold text-brand-text mt-6">{processingStatus}</h2>
             <p className="text-brand-subtle mt-2">This may take a few moments for large files. Please wait.</p>
         </div>
       )}
@@ -371,9 +438,10 @@ function AppContent() {
                   <PlusIcon className="h-6 w-6" />
                 </button>
                 {isAddMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-brand-secondary rounded-md shadow-lg py-1 z-30">
+                  <div className="absolute right-0 mt-2 w-52 bg-brand-secondary rounded-md shadow-lg py-1 z-30">
                     <a onClick={() => handleOpenFormModal()} className="cursor-pointer flex items-center px-4 py-2 text-sm text-brand-text hover:bg-slate-700">Add Manually</a>
                     <a onClick={handleOpenSearchModal} className="cursor-pointer flex items-center px-4 py-2 text-sm text-brand-text hover:bg-slate-700">Search Online</a>
+                    <div className="border-t border-slate-700 my-1"></div>
                     <a onClick={handleTriggerImport} className="cursor-pointer flex items-center px-4 py-2 text-sm text-brand-text hover:bg-slate-700">Import from CSV</a>
                   </div>
                 )}
@@ -386,8 +454,8 @@ function AppContent() {
                 </button>
                 {isSettingsMenuOpen && (
                    <div className="absolute right-0 mt-2 w-56 bg-brand-secondary rounded-md shadow-lg py-1 z-30">
-                    <a onClick={handleExport} className="cursor-pointer flex items-center px-4 py-2 text-sm text-brand-text hover:bg-slate-700">
-                      <DownloadIcon className="h-4 w-4 mr-2" /> Export Library (CSV)
+                    <a onClick={() => { setIsBackupRestoreModalOpen(true); setSettingsMenuOpen(false); }} className="cursor-pointer flex items-center px-4 py-2 text-sm text-brand-text hover:bg-slate-700">
+                      <HardDriveIcon className="h-4 w-4 mr-2" /> Backup & Restore
                     </a>
                     <div className="border-t border-slate-700 my-1"></div>
                     <a onClick={() => { setIsJourneyModalOpen(true); setSettingsMenuOpen(false); }} className="cursor-pointer flex items-center px-4 py-2 text-sm text-brand-text hover:bg-slate-700">
@@ -507,6 +575,15 @@ function AppContent() {
             onClose={() => setIsAdvancedModalOpen(false)}
             onComplete={fetchBooks}
         />
+      )}
+
+      {isBackupRestoreModalOpen && (
+          <BackupRestoreModal
+              onClose={() => setIsBackupRestoreModalOpen(false)}
+              onExportCSV={handleExportCSV}
+              onFullBackup={handleFullBackup}
+              onRestore={handleFileRestore}
+          />
       )}
 
       {isSortModalOpen && (

@@ -31,7 +31,7 @@ const pool = new Pool({
 
 // --- Middleware ---
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Increase limit for full backup restore
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Serve uploaded cover images
@@ -43,7 +43,7 @@ const UPLOADS_DIR = path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(COVERS_DIR)) fs.mkdirSync(COVERS_DIR, { recursive: true });
 
-const csvUpload = multer({ dest: UPLOADS_DIR });
+const fileUpload = multer({ dest: UPLOADS_DIR });
 
 const coverStorage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, COVERS_DIR),
@@ -269,7 +269,7 @@ app.delete('/api/books', async (req, res) => {
     }
 });
 
-app.post('/api/books/import', csvUpload.single('csvfile'), async (req, res) => {
+app.post('/api/books/import', fileUpload.single('csvfile'), async (req, res) => {
     if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
 
     const client = await pool.connect();
@@ -404,6 +404,135 @@ app.get('/api/books/export', async (req, res) => {
 app.post('/api/upload-cover', coverUpload.single('cover'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
     res.json({ path: `/storage/covers/${req.file.filename}` });
+});
+
+app.get('/api/books/backup/full', async (req, res) => {
+    try {
+        const { rows: books } = await pool.query('SELECT * FROM books ORDER BY "ID" ASC');
+
+        const imagePaths = new Map();
+        books.forEach(book => {
+            if (book['Icon Path'] && book['Icon Path'].startsWith('/storage/covers/')) {
+                const filename = path.basename(book['Icon Path']);
+                imagePaths.set(filename, path.join(COVERS_DIR, filename));
+            }
+        });
+
+        const images = {};
+        for (const [filename, filepath] of imagePaths.entries()) {
+            try {
+                const fileData = await fsPromises.readFile(filepath);
+                const mimeType = `image/${path.extname(filename).slice(1) || 'jpeg'}`;
+                images[filename] = `data:${mimeType};base64,${fileData.toString('base64')}`;
+            } catch (readErr) {
+                console.warn(`Could not read image file for backup: ${filepath}`, readErr.message);
+            }
+        }
+        
+        const booksForBackup = books.map(book => {
+            if (book['Icon Path'] && book['Icon Path'].startsWith('/storage/covers/')) {
+                return { ...book, "Icon Path": path.basename(book['Icon Path']) };
+            }
+            return book;
+        });
+
+        const backupData = { books: booksForBackup, images };
+        const date = new Date().toISOString().slice(0, 10);
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="home-book-library-backup-${date}.json"`);
+        res.send(JSON.stringify(backupData, null, 2));
+
+    } catch (err) {
+        console.error('Full backup failed:', err);
+        res.status(500).json({ error: 'Failed to create full backup.' });
+    }
+});
+
+
+app.post('/api/books/restore/full', fileUpload.single('restorefile'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: 'No backup file uploaded.' });
+
+    let newBooksCount = 0;
+    let skippedBooksCount = 0;
+    let imagesRestoredCount = 0;
+
+    const client = await pool.connect();
+    try {
+        const backupContent = await fsPromises.readFile(req.file.path, 'utf8');
+        const backupData = JSON.parse(backupContent);
+
+        if (!backupData.books || !backupData.images) {
+            throw new Error('Invalid backup file format.');
+        }
+
+        // Restore images
+        for (const [filename, base64Data] of Object.entries(backupData.images)) {
+            try {
+                const parts = base64Data.split(';base64,');
+                const data = parts[1];
+                const buffer = Buffer.from(data, 'base64');
+                await fsPromises.writeFile(path.join(COVERS_DIR, filename), buffer);
+                imagesRestoredCount++;
+            } catch (imgErr) {
+                console.warn(`Failed to restore image ${filename}:`, imgErr.message);
+            }
+        }
+        
+        await client.query('BEGIN');
+        
+        for (const book of backupData.books) {
+            // Duplicate Check
+            const { ISBN, Title, Author } = book;
+            let isDuplicate = false;
+            if (ISBN && String(ISBN).trim() !== '') {
+                const result = await client.query('SELECT "ID" FROM books WHERE "ISBN" = $1', [String(ISBN).trim()]);
+                if (result.rows.length > 0) isDuplicate = true;
+            }
+            if (!isDuplicate && Title && Author) {
+                const result = await client.query('SELECT "ID" FROM books WHERE "Title" = $1 AND "Author" = $2', [Title, Author]);
+                if (result.rows.length > 0) isDuplicate = true;
+            }
+
+            if (isDuplicate) {
+                skippedBooksCount++;
+                continue;
+            }
+
+            // Prepare book for insertion
+            if (book['Icon Path'] && !book['Icon Path'].startsWith('/')) {
+                book['Icon Path'] = `/storage/covers/${book['Icon Path']}`;
+            }
+
+            delete book.ID; // Let DB generate new ID
+
+            const validColumns = Object.keys(book).filter(k => book[k] !== null && book[k] !== undefined);
+            const values = validColumns.map(k => book[k]);
+            
+            if (values.length === 0 || !book.Title || !book.Author) continue;
+
+            const columns = validColumns.map(k => `"${k}"`).join(', ');
+            const placeholders = validColumns.map((_, i) => `$${i + 1}`).join(', ');
+            const query = `INSERT INTO books (${columns}) VALUES (${placeholders})`;
+            await client.query(query, values);
+            newBooksCount++;
+        }
+
+        await client.query('COMMIT');
+        res.json({
+            message: 'Restore successful.',
+            newBooksCount,
+            skippedBooksCount,
+            imagesRestoredCount
+        });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Restore error:', error);
+        res.status(500).json({ message: `Failed to restore from backup: ${error.message}. All changes have been rolled back.` });
+    } finally {
+        client.release();
+        fs.unlink(req.file.path, () => {});
+    }
 });
 
 app.get('/api/search', async (req, res) => {
