@@ -2,7 +2,7 @@
 
 A modern web application for personal book cataloging, featuring smart data fetching, CSV import/export, and a persistent library storage system.
 
-![Application Screenshot](https://raw.githubusercontent.com/19orzeszek90/Home-Book-Library/screenshot.png)
+![Application Screenshot](https://github.com/19orzeszek90/Home-Book-Library-v1/blob/main/screenshot.png)
 
 ## ✨ Features
 
