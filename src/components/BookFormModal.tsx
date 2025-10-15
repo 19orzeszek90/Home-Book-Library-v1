@@ -130,7 +130,8 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ book, books, onClose, onS
   const inputStyle = "bg-slate-700 p-2 rounded-md w-full border-transparent focus:outline-none focus:ring-2 focus:ring-brand-accent";
   const formatDateForInput = (dateString?: string | null) => dateString ? dateString.substring(0, 10) : '';
 
-  const coverForPreview = formData['Image Url'] !== undefined ? formData['Image Url'] : (formData['Icon Path'] || '');
+  // Use the new, unsaved "Image Url" if it's a string (meaning it was changed), otherwise fall back to the saved "Icon Path".
+  const coverForPreview = typeof formData['Image Url'] === 'string' ? formData['Image Url'] : (formData['Icon Path'] || '');
 
   return (
     <>
