@@ -3,6 +3,7 @@ import type { Book } from '../App';
 import ImageUpload from './ImageUpload';
 import MultiTagInput from './MultiTagInput';
 import CoverSearchModal from './CoverSearchModal';
+import StyledDatalistInput from './StyledDatalistInput';
 
 interface BookFormModalProps {
   book: Book | Partial<Book> | null;
@@ -24,11 +25,15 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ book, books, onClose, onS
     const bookshelves = new Set<string>();
     const genres = new Set<string>();
     const tags = new Set<string>();
+    const authors = new Set<string>();
+    const publishers = new Set<string>();
 
     books.forEach(b => {
         if (b.Format) formats.add(b.Format);
         if (b.Language) languages.add(b.Language);
         if (b.BookShelf) bookshelves.add(b.BookShelf);
+        if (b.Author) authors.add(b.Author.trim());
+        if (b.Publisher) publishers.add(b.Publisher.trim());
         if (b.Genres) {
           b.Genres.split(',').forEach(g => {
             const trimmed = g.trim();
@@ -49,6 +54,8 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ book, books, onClose, onS
         bookshelves: Array.from(bookshelves).sort(),
         genres: Array.from(genres).sort(),
         tags: Array.from(tags).sort(),
+        authors: Array.from(authors).sort(),
+        publishers: Array.from(publishers).sort(),
     };
   }, [books]);
   
@@ -157,10 +164,23 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ book, books, onClose, onS
                 {/* Right Column: Main Info */}
                 <div className="md:col-span-2 space-y-4">
                     <input name="Title" value={formData.Title || ''} onChange={handleChange} placeholder="Title *" required className={inputStyle} autoFocus />
-                    <input name="Author" value={formData.Author || ''} onChange={handleChange} placeholder="Author *" required className={inputStyle} />
+                    <StyledDatalistInput
+                      name="Author"
+                      value={formData.Author || ''}
+                      onChange={handleChange}
+                      placeholder="Author *"
+                      suggestions={uniqueValues.authors}
+                      required
+                    />
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <input name="Publisher" value={formData.Publisher || ''} onChange={handleChange} placeholder="Publisher" className={inputStyle} />
+                        <StyledDatalistInput
+                          name="Publisher"
+                          value={formData.Publisher || ''}
+                          onChange={handleChange}
+                          placeholder="Publisher"
+                          suggestions={uniqueValues.publishers}
+                        />
                         <input type="text" name="Published Date" value={formData['Published Date'] || ''} onChange={handleChange} placeholder="Published (YYYY-MM-DD)" className={inputStyle} />
                         <input name="ISBN" value={formData.ISBN || ''} onChange={handleChange} placeholder="ISBN" className={inputStyle} />
                     </div>
@@ -168,29 +188,32 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ book, books, onClose, onS
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <input name="Series" value={formData.Series || ''} onChange={handleChange} placeholder="Series" className={inputStyle} />
                         <input type="number" name="Volume" value={formData.Volume ?? ''} onChange={handleChange} placeholder="Volume" className={inputStyle} />
-                        <div>
-                          <input list="language-list" name="Language" value={formData.Language || ''} onChange={handleChange} placeholder="Language" className={inputStyle} />
-                          <datalist id="language-list">
-                            {uniqueValues.languages.map(value => <option key={value} value={value} />)}
-                          </datalist>
-                        </div>
-                        <div>
-                          <input list="format-list" name="Format" value={formData.Format || ''} onChange={handleChange} placeholder="Format (e.g., Hardcover)" className={inputStyle} />
-                          <datalist id="format-list">
-                            {uniqueValues.formats.map(value => <option key={value} value={value} />)}
-                          </datalist>
-                        </div>
+                        <StyledDatalistInput
+                            name="Language"
+                            value={formData.Language || ''}
+                            onChange={handleChange}
+                            placeholder="Language"
+                            suggestions={uniqueValues.languages}
+                        />
+                        <StyledDatalistInput
+                            name="Format"
+                            value={formData.Format || ''}
+                            onChange={handleChange}
+                            placeholder="Format (e.g., Hardcover)"
+                            suggestions={uniqueValues.formats}
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <input type="number" name="Pages" value={formData.Pages ?? ''} onChange={handleChange} placeholder="Pages" className={inputStyle} />
                         <input type="number" name="Page Read" value={formData['Page Read'] ?? ''} onChange={handleChange} placeholder="Pages Read" className={inputStyle} />
-                        <div>
-                          <input list="bookshelf-list" name="BookShelf" value={formData.BookShelf || ''} onChange={handleChange} placeholder="Bookshelf" className={inputStyle} />
-                          <datalist id="bookshelf-list">
-                            {uniqueValues.bookshelves.map(value => <option key={value} value={value} />)}
-                          </datalist>
-                        </div>
+                        <StyledDatalistInput
+                          name="BookShelf"
+                          value={formData.BookShelf || ''}
+                          onChange={handleChange}
+                          placeholder="Bookshelf"
+                          suggestions={uniqueValues.bookshelves}
+                        />
                         <input name="Location" value={formData.Location || ''} onChange={handleChange} placeholder="Location" className={inputStyle} />
                     </div>
 
