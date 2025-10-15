@@ -4,8 +4,9 @@ import BookFormModal from './components/BookFormModal';
 import SearchBookModal from './components/SearchBookModal';
 import AboutModal from './components/AboutModal';
 import BookDetailModal from './components/BookDetailModal';
-import StatisticsModal from './components/StatisticsModal';
+import ReadingJourneyModal from './components/ReadingJourneyModal';
 import AdvancedSettingsModal from './components/AdvancedSettingsModal';
+import ReadingGoalBanner from './components/ReadingGoalBanner';
 import ViewSwitcher from './components/ViewSwitcher';
 import SortControls, { SortKey, SortDirection } from './components/SortControls';
 import SortModal from './components/SortModal';
@@ -67,7 +68,7 @@ function AppContent() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
-  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [isJourneyModalOpen, setIsJourneyModalOpen] = useState(false);
   const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false);
   const [isAddMenuOpen, setAddMenuOpen] = useState(false);
   const [isSettingsMenuOpen, setSettingsMenuOpen] = useState(false);
@@ -120,6 +121,8 @@ function AppContent() {
     const wishlistCount = books.filter(book => book.is_wishlist).length;
     return { libraryCount, wishlistCount };
   }, [books]);
+
+  const libraryBooks = useMemo(() => books.filter(b => !b.is_wishlist), [books]);
 
   const filteredBooks = useMemo(() => {
     const viewFilteredBooks = books.filter(book => {
@@ -383,11 +386,12 @@ function AppContent() {
                 </button>
                 {isSettingsMenuOpen && (
                    <div className="absolute right-0 mt-2 w-56 bg-brand-secondary rounded-md shadow-lg py-1 z-30">
-                    <a onClick={() => { setIsStatsModalOpen(true); setSettingsMenuOpen(false); }} className="cursor-pointer flex items-center px-4 py-2 text-sm text-brand-text hover:bg-slate-700">
-                      <ChartBarIcon className="h-4 w-4 mr-2" /> Statistics
-                    </a>
                     <a onClick={handleExport} className="cursor-pointer flex items-center px-4 py-2 text-sm text-brand-text hover:bg-slate-700">
                       <DownloadIcon className="h-4 w-4 mr-2" /> Export Library (CSV)
+                    </a>
+                    <div className="border-t border-slate-700 my-1"></div>
+                    <a onClick={() => { setIsJourneyModalOpen(true); setSettingsMenuOpen(false); }} className="cursor-pointer flex items-center px-4 py-2 text-sm text-brand-text hover:bg-slate-700">
+                      <ChartBarIcon className="h-4 w-4 mr-2" /> Reading Journey
                     </a>
                     <div className="border-t border-slate-700 my-1"></div>
                     <a onClick={() => { setIsAdvancedModalOpen(true); setSettingsMenuOpen(false); }} className="cursor-pointer flex items-center px-4 py-2 text-sm text-brand-text hover:bg-slate-700">
@@ -406,7 +410,7 @@ function AppContent() {
         </nav>
       </header>
       
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex items-center justify-between border-b border-slate-700">
           <div className="flex">
               <button onClick={() => setCurrentView('library')} className={`px-4 py-3 text-sm font-medium transition-colors ${currentView === 'library' ? 'text-brand-accent border-b-2 border-brand-accent' : 'text-brand-subtle hover:text-brand-text'}`}>
@@ -430,6 +434,9 @@ function AppContent() {
         </div>
 
         <div className="pt-6">
+          {currentView === 'library' && (
+              <ReadingGoalBanner books={libraryBooks} />
+          )}
           {isLoading && <p className="text-center text-brand-subtle">Loading your library...</p>}
           {error && <p className="text-center text-red-500">Error: {error}</p>}
           {!isLoading && !error && books.length === 0 && (
@@ -490,8 +497,8 @@ function AppContent() {
         <AboutModal onClose={() => setIsAboutModalOpen(false)} />
       )}
       
-      {isStatsModalOpen && (
-        <StatisticsModal books={books.filter(b => !b.is_wishlist)} onClose={() => setIsStatsModalOpen(false)} />
+      {isJourneyModalOpen && (
+        <ReadingJourneyModal books={libraryBooks} onClose={() => setIsJourneyModalOpen(false)} onBookSelect={handleShowDetails}/>
       )}
 
       {isAdvancedModalOpen && (

@@ -10,7 +10,7 @@ interface AdvancedSettingsModalProps {
   onComplete: () => void;
 }
 
-type ActiveTab = 'books' | 'genres' | 'bookshelves';
+type ActiveTab = 'books' | 'genres' | 'bookshelves' | 'goals';
 
 const API_URL = (import.meta as any).env.VITE_API_URL || '';
 
@@ -23,6 +23,13 @@ const AdvancedSettingsModal: React.FC<AdvancedSettingsModalProps> = ({ books, on
   const [selectedGenres, setSelectedGenres] = useState<Set<string>>(new Set());
   const [selectedBookshelves, setSelectedBookshelves] = useState<Set<string>>(new Set());
   
+  // State for Reading Goal
+  const [readingGoal, setReadingGoal] = useState<number>(() => {
+    const savedGoal = localStorage.getItem('readingGoal2024');
+    return savedGoal ? parseInt(savedGoal, 10) : 10;
+  });
+  const [goalInput, setGoalInput] = useState<string>(String(readingGoal));
+
   const { showConfirmation } = useConfirmation();
 
   // Memoized calculations
@@ -44,6 +51,13 @@ const AdvancedSettingsModal: React.FC<AdvancedSettingsModalProps> = ({ books, on
     });
     return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
   }, [books]);
+  
+  const booksReadThisYear = useMemo(() => {
+      const currentYear = new Date().getFullYear();
+      return books.filter(b => b.Read && b['Finished Reading Date'] && new Date(b['Finished Reading Date']).getFullYear() === currentYear).length;
+  }, [books]);
+  
+  const progressPercentage = readingGoal > 0 ? (booksReadThisYear / readingGoal) * 100 : 0;
 
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
@@ -59,6 +73,7 @@ const AdvancedSettingsModal: React.FC<AdvancedSettingsModalProps> = ({ books, on
       books: () => setSelectedBookIds(prev => { const next = new Set(prev); next.has(item as number) ? next.delete(item as number) : next.add(item as number); return next; }),
       genres: () => setSelectedGenres(prev => { const next = new Set(prev); next.has(item as string) ? next.delete(item as string) : next.add(item as string); return next; }),
       bookshelves: () => setSelectedBookshelves(prev => { const next = new Set(prev); next.has(item as string) ? next.delete(item as string) : next.add(item as string); return next; }),
+      goals: () => {}, // No selection for goals tab
     };
     actionMap[type]();
   };
@@ -70,6 +85,17 @@ const AdvancedSettingsModal: React.FC<AdvancedSettingsModalProps> = ({ books, on
     if (type === 'genres') setSelectedGenres(checked ? new Set(genreCounts.map(g => g[0])) : new Set());
     if (type === 'bookshelves') setSelectedBookshelves(checked ? new Set(bookshelfCounts.map(b => b[0])) : new Set());
   };
+  
+  const handleSetGoal = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newGoal = parseInt(goalInput, 10);
+    if (!isNaN(newGoal) && newGoal > 0) {
+      setReadingGoal(newGoal);
+      localStorage.setItem('readingGoal2024', String(newGoal));
+      showConfirmation({ title: 'Goal Updated', message: `Your new reading goal for ${new Date().getFullYear()} is ${newGoal} books.`, confirmText: 'OK' });
+    }
+  };
+
 
   // Deletion handlers
   const handleDeleteBooks = async () => {
@@ -188,6 +214,7 @@ const AdvancedSettingsModal: React.FC<AdvancedSettingsModalProps> = ({ books, on
                 <TabButton tab="books" label="Manage Books" />
                 <TabButton tab="genres" label="Manage Genres" />
                 <TabButton tab="bookshelves" label="Manage Bookshelves" />
+                <TabButton tab="goals" label="Reading Goal" />
             </div>
         </div>
 
@@ -235,31 +262,63 @@ const AdvancedSettingsModal: React.FC<AdvancedSettingsModalProps> = ({ books, on
               </tbody>
             </table>
           )}
+          {activeTab === 'goals' && (
+            <div className="p-4 md:p-6">
+                <section>
+                    <h3 className="text-lg font-semibold text-brand-text mb-3">Your {new Date().getFullYear()} Reading Goal Setting</h3>
+                    <div className="bg-slate-800 p-4 rounded-lg flex flex-col md:flex-row items-center gap-4">
+                        <div className="flex-grow w-full">
+                            <div className="flex justify-between items-baseline mb-1">
+                                <span className="text-brand-text font-bold text-lg">{booksReadThisYear} / {readingGoal} books</span>
+                                <span className="text-brand-subtle text-sm">{Math.round(progressPercentage)}% complete</span>
+                            </div>
+                            <div className="w-full bg-slate-700 rounded-full h-4">
+                                <div className="bg-brand-accent h-4 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%` }}></div>
+                            </div>
+                        </div>
+                        <form onSubmit={handleSetGoal} className="flex-shrink-0 flex items-center gap-2">
+                            <input
+                                type="number"
+                                value={goalInput}
+                                onChange={(e) => setGoalInput(e.target.value)}
+                                className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 w-24 text-center"
+                                min="1"
+                            />
+                            <button type="submit" className="bg-slate-600 hover:bg-slate-500 text-white font-bold py-1.5 px-4 rounded-md text-sm">Set Goal</button>
+                        </form>
+                    </div>
+                </section>
+            </div>
+          )}
         </div>
 
-        {activeTab === 'books' && (
-          <footer className="p-4 border-t border-slate-700 flex justify-between items-center bg-brand-primary">
-            <p className="text-sm text-brand-subtle">{selectedBookIds.size} book(s) selected</p>
-            <button onClick={handleDeleteBooks} disabled={selectedBookIds.size === 0 || isProcessing} className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center gap-2">
-              <TrashIcon className="h-4 w-4" /> {isProcessing ? 'Deleting...' : 'Delete Selected'}
-            </button>
-          </footer>
-        )}
-        {activeTab === 'genres' && (
-            <footer className="p-4 border-t border-slate-700 flex justify-between items-center bg-brand-primary">
+        {activeTab !== 'goals' && (
+        <footer className="p-4 border-t border-slate-700 flex justify-between items-center bg-brand-primary">
+            {activeTab === 'books' && (
+                <>
+                <p className="text-sm text-brand-subtle">{selectedBookIds.size} book(s) selected</p>
+                <button onClick={handleDeleteBooks} disabled={selectedBookIds.size === 0 || isProcessing} className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center gap-2">
+                    <TrashIcon className="h-4 w-4" /> {isProcessing ? 'Deleting...' : 'Delete Selected'}
+                </button>
+                </>
+            )}
+            {activeTab === 'genres' && (
+                <>
                 <p className="text-sm text-brand-subtle">{selectedGenres.size} genre(s) selected</p>
                 <button onClick={handleDeleteGenres} disabled={selectedGenres.size === 0 || isProcessing} className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center gap-2">
-                <TrashIcon className="h-4 w-4" /> {isProcessing ? 'Removing...' : 'Remove Selected'}
+                    <TrashIcon className="h-4 w-4" /> {isProcessing ? 'Removing...' : 'Remove Selected'}
                 </button>
-            </footer>
-        )}
-        {activeTab === 'bookshelves' && (
-            <footer className="p-4 border-t border-slate-700 flex justify-between items-center bg-brand-primary">
+                </>
+            )}
+            {activeTab === 'bookshelves' && (
+                <>
                 <p className="text-sm text-brand-subtle">{selectedBookshelves.size} bookshelf/shelves selected</p>
                 <button onClick={handleDeleteBookshelves} disabled={selectedBookshelves.size === 0 || isProcessing} className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center gap-2">
-                <TrashIcon className="h-4 w-4" /> {isProcessing ? 'Removing...' : 'Remove Selected'}
+                    <TrashIcon className="h-4 w-4" /> {isProcessing ? 'Removing...' : 'Remove Selected'}
                 </button>
-            </footer>
+                </>
+            )}
+        </footer>
         )}
       </div>
     </div>
