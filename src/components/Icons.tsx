@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 // FIX: Defined a custom `IconProps` type to explicitly include the `title` prop,
@@ -11,6 +12,13 @@ export const PlusIcon = ({ className, title, ...rest }: IconProps) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" {...rest}>
     {title && <title>{title}</title>}
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+  </svg>
+);
+
+export const SparklesIcon = ({ className, title, ...rest }: IconProps) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" {...rest}>
+    {title && <title>{title}</title>}
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l4 4L7 11l-4-4 2-4zm7 9l4 4-2 4-4-4 2-4zm7-9l-4 4 2 4 4-4-2-4z" />
   </svg>
 );
 
@@ -94,6 +102,20 @@ export const HardDriveIcon = ({ className, title, ...rest }: IconProps) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} {...rest}>
     {title && <title>{title}</title>}
     <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+  </svg>
+);
+
+export const BeakerIcon = ({ className, title, ...rest }: IconProps) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} {...rest}>
+    {title && <title>{title}</title>}
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v1.244c0 .578.451 1.073 1.026 1.149a3.532 3.532 0 012.448 2.448c.076.575.571 1.073 1.149 1.026h1.244m-5.865 0H6.75m10.5 0h-1.244c-.578 0-1.073-.451-1.149-1.026a3.532 3.532 0 01-2.448-2.448c-.076-.575-.571-1.026-1.149-1.026H9.75M12 9v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v12a2 2 0 01-2 2z" />
+  </svg>
+);
+
+export const TerminalIcon = ({ className, title, ...rest }: IconProps) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-5 w-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} {...rest}>
+    {title && <title>{title}</title>}
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
   </svg>
 );
 

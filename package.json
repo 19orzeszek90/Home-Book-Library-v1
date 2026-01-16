@@ -1,3 +1,4 @@
+
 {
   "name": "home-book-library",
   "private": true,
@@ -11,6 +12,7 @@
     "rebuild": "docker-compose up -d --build && docker image prune -f"
   },
   "dependencies": {
+    "@google/genai": "^1.35.0",
     "axios": "^1.7.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

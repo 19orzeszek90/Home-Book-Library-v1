@@ -1,66 +1,74 @@
-# Home Book Library
 
-A modern web application for personal book cataloging, featuring smart data fetching, CSV import/export, and a persistent library storage system.
+# 📚 Home Book Library v1.5
 
-![Application Screenshot](https://github.com/19orzeszek90/Home-Book-Library-v1/blob/main/screenshot.png)
+A professional, high-performance web application designed for bibliophiles who need more than just a list. Home Book Library is a complete ecosystem for cataloging, managing, and discovering your collection, powered by modern tech and AI.
 
-## ✨ Features
+---
 
-*   **📚 Comprehensive Library Management:** Catalog your books with rich details, from title and author to genres, tags, and personal ratings. Manage cover art with multiple options: drag & drop, file upload, paste URL, or use the built-in cover search.
-*   **💡 Smart Data Fetching:** Use the integrated online search to find books by title, author, or ISBN. The app queries both **Google Books** and **Open Library**, combining the results to help you find the best data and cover art.
-*   **🔖 Wishlist & Reading Status:** Keep a separate wishlist for books you want to read. Track your progress by marking books as "Read," and log your start and finish dates.
-*   **📊 Insightful Statistics:** Visualize your library with detailed statistics, including reading progress, total books read, top authors, genre distribution, and rating breakdowns.
-*   **🛠️ Powerful Command Center:** Go beyond basic edits with an advanced management tool. Bulk delete books, or clean up and manage all your genres and bookshelves from a single, powerful interface.
-*   **🔄 Advanced Backup & Restore:** Secure your entire library with a comprehensive backup system. Create a single `.json` file containing all book data and cover images for complete restoration, or use the classic CSV import/export for migrating to other apps. The system intelligently handles duplicates during restore and import.
-*   **🎨 Customizable & Responsive UI:** Enjoy a sleek, modern, dark-themed interface that works beautifully on any device. Customize the library view with compact, default, or cozy grid layouts.
-*   **🐳 Fully Dockerized:** Get up and running in minutes. The entire application, including the PostgreSQL database, is containerized for a simple and reliable setup using Docker Compose.
-*   **💾 Persistent Storage:** Your data is always safe. The book library and cover images are stored in persistent Docker volumes, so your collection is preserved across restarts.
+## 🚀 Key Features
 
-## 🚀 Getting Started
+### 💎 Intelligent Collection Management
+- **Library & Wishlist:** Separate your current collection from your future reads.
+- **NEW: Collection View:** Automatically groups your books into series and cycles. Books are sorted by volume number (`Vol. 1`, `Vol. 2`), allowing you to visualize and complete your favorite sagas. Collapsible sections keep the interface clean and are collapsed by default.
+- **Dynamic Views:** Choose between `Compact`, `Default`, or `Cozy` grid sizes to suit your aesthetic.
 
-Follow these steps to launch the application on your local machine.
+### 🤖 AI Librarian (Gemini API)
+- **AI Magic:** Automatically fill missing metadata (summaries, genres, tags, publishers) using the Gemini Pro model.
+- **Deep ISBN Scan:** If a standard database search fails, the AI performs a "Deep Scan" to identify rare or local editions.
+- **Interactive AI Librarian:** Chat with your library. Ask for recommendations based on what you own or get quick summaries of your books.
 
-### Prerequisites
+### 🛠️ Professional Command Center
+- **Bulk Operations:** Select multiple books to update their language, format, shelf, or price simultaneously.
+- **Database Cleanup:** Manage all your genres and tags from a central hub. Merge duplicates or remove obsolete entries in bulk.
+- **Table View:** A powerful, sortable, and resizable data table for power users who prefer a spreadsheet-like experience.
 
-*   [Docker](https://docs.docker.com/get-docker/)
-*   [Docker Compose](https://docs.docker.com/compose/install/)
+### 📊 Advanced Analytics
+- **Reading Journey:** Track your annual progress with a visual goal banner.
+- **Financial Stats:** Monitor your library's economy with "Average Book Value" and "Estimated Total Library Value".
+- **Visual Distributions:** High-quality charts showing genre, rating, and language distributions.
 
-### Installation & Launch
+### 🔄 Data Integrity & Portability
+- **CSV Export/Import:** Move your data anywhere. **NEW:** Support for UTF-8 with BOM ensures that Polish and other special characters display perfectly in Microsoft Excel.
+- **Full JSON Backups:** Export your entire library, including book covers, into a single backup file for easy migration or restoration.
+- **Persistent Storage:** Fully dockerized with PostgreSQL and local volumes for images.
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/19orzeszek90/Home-Book-Library-v1.git
-    cd Home-Book-Library-v1
-    ```
+---
 
-2.  **Rename Docker configuration files:**
-    The repository contains template files for Docker that must be renamed.
-    *   Rename `APP_BUILD_INSTRUCTIONS.txt` to `Dockerfile`.
-    *   Rename `BUILD_CONTEXT_EXCLUSIONS_LIST.txt` to `.dockerignore`.
+## 🛠️ Tech Stack
 
+- **Frontend:** React 19, Tailwind CSS, TypeScript, Vite.
+- **Backend:** Node.js, Express.js.
+- **Database:** PostgreSQL 14.
+- **AI:** Google Gemini API (@google/genai).
+- **Deployment:** Docker & Docker Compose.
 
-3.  **Build and Run with Docker Compose:**
-    This single command will build the app's Docker image and start all necessary services in the background.
-    ```bash
-    docker-compose up -d --build
-    ```
+---
 
-4.  **Access the Application:**
-    Once the containers are running, open your web browser and navigate to:
-    **http://localhost:3001**
+## ⚙️ Installation
 
-## 📦 Project Structure
+1. **Clone the Repo:**
+   ```bash
+   git clone https://github.com/19orzeszek90/Home-Book-Library-v1.git
+   cd Home-Book-Library-v1
+   ```
 
-This project uses a containerized setup for both the frontend application and the PostgreSQL database.
+2. **Prepare Environment:**
+   - Rename `APP_BUILD_INSTRUCTIONS.txt` to `Dockerfile`.
+   - Rename `BUILD_CONTEXT_EXCLUSIONS_LIST.txt` to `.dockerignore`.
+   - **Gemini API Key:** You must generate your own API key to use AI features.
+     - Get it here: [Google AI Studio API Key](https://ai.google.dev/gemini-api/docs/api-key)
+     - In `docker-compose.yml`, replace `WKLEJ_TU_SWOJ_KLUCZ` with your key.
 
-*   `Dockerfile`: Defines the steps to build the production Node.js server image, which serves the React frontend.
-*   `docker-compose.yml`: Orchestrates the application and database services, networking, and volumes.
-*   `server.js`: The Express.js backend that handles API requests, database interactions, and CSV operations.
-*   `src/`: Contains the React frontend application source code.
+3. **Launch:**
+   ```bash
+   docker-compose up -d --build
+   ```
+   Access your library at `http://localhost:3001`.
 
-## 💾 Data Persistence
+---
 
-*   Your book library data is stored in a persistent Docker volume (`db_data`) attached to the PostgreSQL container.
-*   Book cover images are stored in another persistent Docker volume (`book-storage`).
-*   All your data will be preserved even if you stop and restart the containers.
-*   To **completely remove all data**, run the command: `docker-compose down -v`.
+## 🛡️ License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+*Developed with passion for books and clean code.*

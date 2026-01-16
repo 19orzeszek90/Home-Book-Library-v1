@@ -1,7 +1,13 @@
+
 # Stage 1: Build the React frontend
 FROM node:18-alpine AS builder
 
 WORKDIR /app
+
+# Add build argument for the API Key
+ARG GEMINI_API_KEY
+# Set it as an environment variable so Vite can see it during 'npm run build'
+ENV GEMINI_API_KEY=$GEMINI_API_KEY
 
 COPY package*.json ./
 RUN npm install

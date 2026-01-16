@@ -1,32 +1,74 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   html {
-    /* Custom scrollbar styles for Firefox */
     scrollbar-width: thin;
-    scrollbar-color: #475569 #1E293B;
+    scrollbar-color: #0ea5e9 #020617;
+  }
+  
+  body {
+    @apply bg-[#020617] text-[#f1f5f9] antialiased;
+    background-image: 
+      linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
 }
 
-/* Custom Scrollbar Styles for Webkit browsers (Chrome, Safari, Edge) */
+/* Cyberpunk Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px; /* Width of the entire scrollbar */
-  height: 8px; /* Height for horizontal scrollbar */
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1E293B; /* Background of the track (brand-secondary) */
+  background: #020617;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #475569; /* Color of the scroll thumb (slate-600) */
-  border-radius: 4px;
-  /* Creates a "padding" effect */
-  border: 2px solid #1E293B;
+  background-color: #0ea5e9;
+  border-radius: 0;
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #64748B; /* Thumb color on hover (slate-500) */
+  background-color: #38bdf8;
+}
+
+/* Neon Glow Utilities */
+.neon-border {
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.neon-border-orange {
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.2);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+.glass-panel {
+  @apply bg-slate-950/80 backdrop-blur-xl border border-white/10;
+}
+
+/* Scanline Effect for special components */
+.scanline::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: rgba(56, 189, 248, 0.1);
+  opacity: 0.5;
+  animation: scan 3s linear infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+@keyframes scan {
+  0% { top: 0; }
+  100% { top: 100%; }
 }

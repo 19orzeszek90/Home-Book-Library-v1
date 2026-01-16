@@ -6,6 +6,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Ten klucz zostanie "wszyty" do frontendu podczas komendy 'docker-compose up --build'
+        - GEMINI_API_KEY=WKLEJ_TU_SWOJ_KLUCZ
     ports:
       - "3001:3000"
     volumes:
@@ -17,6 +20,7 @@ services:
       - DATABASE_URL=postgres://user:password@home-book-library-db:5432/homelibrary
       - NODE_ENV=production
       - PORT=3000
+      - GEMINI_API_KEY=WKLEJ_TU_SWOJ_KLUCZ
 
   home-book-library-db:
     image: postgres:14-alpine
