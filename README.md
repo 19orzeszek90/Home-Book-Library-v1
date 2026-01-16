@@ -53,8 +53,6 @@ A professional, high-performance web application designed for bibliophiles who n
    ```
 
 2. **Prepare Environment:**
-   - Rename `APP_BUILD_INSTRUCTIONS.txt` to `Dockerfile`.
-   - Rename `BUILD_CONTEXT_EXCLUSIONS_LIST.txt` to `.dockerignore`.
    - **Gemini API Key:** You must generate your own API key to use AI features.
      - Get it here: [Google AI Studio API Key](https://ai.google.dev/gemini-api/docs/api-key)
      - In `docker-compose.yml`, replace `WKLEJ_TU_SWOJ_KLUCZ` with your key.
