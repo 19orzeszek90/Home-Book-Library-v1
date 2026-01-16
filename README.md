@@ -1,6 +1,10 @@
 
 # 📚 Home Book Library v1.5
 
+<p align="center">
+  <img src="img/screenshot.png" alt="Home Book Library App Preview" width="800">
+</p>
+
 A professional, high-performance web application designed for bibliophiles who need more than just a list. Home Book Library is a complete ecosystem for cataloging, managing, and discovering your collection, powered by modern tech and AI.
 
 ---
